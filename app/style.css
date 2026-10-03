@@ -6,3 +6,10 @@
 @media(max-width:480px){.date-time-row{grid-template-columns:1fr .8fr}.player-picker{padding-left:12px;padding-right:12px}}
 
 .coach-player-card{background:#12243a!important;border-color:#28527d!important}.coach-name{color:#8fc7ff!important;font-weight:800}.coach-badge{background:#173a5e!important;color:#a9d7ff!important}.coach-player-row{background:#11263d;border-radius:10px;padding-left:10px;padding-right:8px;border-bottom-color:#24486d}.coach-chip{background:#153556!important;border-color:#2b5d8d!important;color:#a9d7ff!important}.coach-candidate{background:#15304d!important;border:1px solid #28527d!important}.coach-role,.coach-assigned{background:#173a5e!important;color:#a9d7ff!important}.coach-toggle{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;gap:10px!important;padding:10px 0}.coach-toggle input{width:20px!important;height:20px!important;margin:0}.coach-toggle span{font-weight:800}.schedule-card{padding:16px 17px}
+
+/* Coach indication: keep layout neutral, color the player name only */
+.coach-player-card{background:#171a1f!important;border-color:#252a31!important}
+.coach-player-row{background:transparent!important;border-radius:0!important;padding-left:2px!important;padding-right:2px!important;border-bottom-color:#282d34!important}
+.coach-candidate{background:#20242a!important;border:0!important}
+.coach-chip{background:#171a1f!important;border-color:#2b3037!important;color:#8fc7ff!important}
+.coach-role,.coach-assigned{background:#252a31!important;color:#8fc7ff!important}
