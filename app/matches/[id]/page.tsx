@@ -40,6 +40,7 @@ export default function MatchDetail(){
 
   const currentIds=new Set(current.map(x=>x.player_id))
   const participating=players.filter(p=>currentIds.has(p.id))
+  const notParticipating=players.filter(p=>!currentIds.has(p.id))
   const stats=useMemo(()=>new Map(players.map(p=>{
     const games=allParticipation.filter(x=>x.player_id===p.id).length
     const jobs=allAssignments.filter(x=>x.player_id===p.id).length
@@ -49,7 +50,9 @@ export default function MatchDetail(){
   async function togglePlayer(playerId:string,on:boolean){
     const s=supabase()
     const {error}=on?await s.from('match_players').insert({match_id:id,player_id:playerId}):await s.from('match_players').delete().eq('match_id',id).eq('player_id',playerId)
-    if(error){alert(error.message);return}; await load()
+    if(error){alert(error.message);return}
+    if(!on) await s.from('assignments').delete().eq('match_id',id).eq('player_id',playerId)
+    await load()
   }
   function qualified(playerId:string,role:string){
     if(role!=='secretariat')return true
@@ -70,7 +73,12 @@ export default function MatchDetail(){
     <header><div><small>{match.location.toUpperCase()}</small><h1>{match.opponent?`Mot ${match.opponent}`:'Hemmamatch'}</h1><p>{match.match_date} · {match.match_time?.slice(0,5)||'Tid ej satt'}</p></div></header>
 
     <section className="section-head"><div><h2>Spelare i matchen</h2><p>{participating.length} valda</p></div><button className="text-button" onClick={()=>setEditingPlayers(v=>!v)}>{editingPlayers?'Klar':'Redigera'}</button></section>
-    {editingPlayers?<section className="card checklist">{players.map(p=><label key={p.id}><input type="checkbox" checked={currentIds.has(p.id)} onChange={e=>togglePlayer(p.id,e.target.checked)}/><span>{p.name}</span></label>)}</section>:<div className="chips">{participating.length?participating.map(p=><span key={p.id}>{p.name}</span>):<p>Inga spelare valda ännu.</p>}</div>}
+    {editingPlayers?<section className="player-picker card">
+      <div className="player-picker-label">Valda · {participating.length}</div>
+      {participating.length?participating.map(p=><div className="player-pick-row selected" key={p.id}><span>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
+      <div className="player-picker-divider"><span>Välj fler</span></div>
+      {notParticipating.map(p=><div className="player-pick-row" key={p.id}><span>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
+    </section>:<div className="chips">{participating.length?participating.map(p=><span key={p.id}>{p.name}</span>):<p>Inga spelare valda ännu.</p>}</div>}
 
     <section className="section-head"><div><h2>Arbetsroller</h2><p>Tryck på en roll för att fördela den.</p></div></section>
     <div className="list">{roles.map(role=>{
