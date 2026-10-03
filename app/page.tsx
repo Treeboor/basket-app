@@ -14,6 +14,11 @@ const roles=[
   {key:'filming',label:'Filmning',short:'Film'},
   {key:'match_host',label:'Matchvärd',short:'Värd'},
 ] as const
+const timeOptions=Array.from({length:96},(_,i)=>{
+  const h=String(Math.floor(i/4)).padStart(2,'0')
+  const m=String((i%4)*15).padStart(2,'0')
+  return `${h}:${m}`
+})
 
 export default function Home(){
   const [matches,setMatches]=useState<Match[]>([])
@@ -26,6 +31,7 @@ export default function Home(){
   const [creating,setCreating]=useState(false)
   const [saving,setSaving]=useState(false)
   const [choosingRole,setChoosingRole]=useState<string|null>(null)
+  const [playersOpen,setPlayersOpen]=useState(true)
   const [form,setForm]=useState({match_date:'',match_time:'',opponent:'',location:'Kungsbacka'})
 
   async function load(){
@@ -47,6 +53,8 @@ export default function Home(){
   const currentMatchPlayers=editing?matchPlayers.filter(x=>x.match_id===editing.id):[]
   const currentIds=new Set(currentMatchPlayers.map(x=>x.player_id))
   const currentAssignments=editing?assignments.filter(x=>x.match_id===editing.id):[]
+  const selectedPlayers=players.filter(p=>currentIds.has(p.id))
+  const unselectedPlayers=players.filter(p=>!currentIds.has(p.id))
 
   async function createMatch(e:React.FormEvent){
     e.preventDefault(); setSaving(true)
@@ -107,7 +115,7 @@ export default function Home(){
     await load()
   }
 
-  function openMatch(m:Match){setEditing(m);setChoosingRole(null)}
+  function openMatch(m:Match){setEditing(m);setChoosingRole(null);setPlayersOpen(true)}
 
   return <main>
     <header><div><small>BASKETLAGET</small><h1>Nästa matcher</h1></div><button className="primary compact" onClick={()=>setCreating(true)}>＋ Ny</button></header>
@@ -133,20 +141,34 @@ export default function Home(){
           <button className="icon-btn" onClick={()=>{setCreating(false);setEditing(null)}}>✕</button>
         </div>
         {creating?<form className="modal-body form-card bare" onSubmit={createMatch}>
-          <label>Datum & tid<input className="date-time-input" type="datetime-local" required value={form.match_date&&form.match_time?`${form.match_date}T${form.match_time.slice(0,5)}`:''} onChange={e=>{const [d,t]=e.target.value.split('T');setForm({...form,match_date:d||'',match_time:t||''})}}/></label>
+          <div className="date-time-row">
+            <label>Datum<input type="date" required value={form.match_date} onChange={e=>setForm({...form,match_date:e.target.value})}/></label>
+            <label>Tid<select value={form.match_time} onChange={e=>setForm({...form,match_time:e.target.value})}><option value="">Tid ej satt</option>{timeOptions.map(t=><option key={t} value={t}>{t}</option>)}</select></label>
+          </div>
           <label>Motståndare<input value={form.opponent} onChange={e=>setForm({...form,opponent:e.target.value})}/></label>
           <label>Plats<select value={form.location} onChange={e=>setForm({...form,location:e.target.value})}><option>Kungsbacka</option><option>Åsa</option></select></label>
           <button className="primary" disabled={saving}>{saving?'Sparar…':'Skapa match'}</button>
         </form>:editing&&<div className="modal-body">
           <div className="edit-grid">
-            <label className="date-time-span">Datum & tid<input className="date-time-input" type="datetime-local" value={editing.match_date?`${editing.match_date}T${editing.match_time?.slice(0,5)||'12:00'}`:''} onChange={e=>{const [d,t]=e.target.value.split('T');setEditing({...editing,match_date:d||editing.match_date,match_time:t||null})}}/></label>
+            <div className="date-time-row date-time-span">
+              <label>Datum<input type="date" value={editing.match_date} onChange={e=>setEditing({...editing,match_date:e.target.value})}/></label>
+              <label>Tid<select value={editing.match_time?.slice(0,5)||''} onChange={e=>setEditing({...editing,match_time:e.target.value||null})}><option value="">Tid ej satt</option>{timeOptions.map(t=><option key={t} value={t}>{t}</option>)}</select></label>
+            </div>
             <label>Motståndare<input value={editing.opponent||''} onChange={e=>setEditing({...editing,opponent:e.target.value})}/></label>
             <label>Plats<select value={editing.location} onChange={e=>setEditing({...editing,location:e.target.value})}><option>Kungsbacka</option><option>Åsa</option></select></label>
           </div>
           <button className="secondary full" onClick={saveMatch} disabled={saving}>{saving?'Sparar…':'Spara matchinfo'}</button>
 
-          <div className="section-head"><div><h3>Spelare</h3><p>{currentIds.size} valda</p></div></div>
-          <div className="checklist card">{players.map(p=><label key={p.id}><input type="checkbox" checked={currentIds.has(p.id)} onChange={e=>togglePlayer(p.id,e.target.checked)}/><span>{p.name}</span></label>)}</div>
+          <button className="section-toggle" onClick={()=>setPlayersOpen(v=>!v)}>
+            <span><b>Spelare</b><small>{currentIds.size} valda</small></span>
+            <span>{playersOpen?'Dölj ▴':'Visa ▾'}</span>
+          </button>
+          {playersOpen&&<div className="player-picker card">
+            <div className="player-picker-label">Valda · {selectedPlayers.length}</div>
+            {selectedPlayers.length?selectedPlayers.map(p=><div className="player-pick-row selected" key={p.id}><span>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
+            <div className="player-picker-divider"><span>Välj fler</span></div>
+            {unselectedPlayers.map(p=><div className="player-pick-row" key={p.id}><span>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
+          </div>}
 
           <div className="section-head"><div><h3>Arbetspass</h3><p>Tryck på ett pass för att välja familj.</p></div></div>
           <div className="list">{roles.map(r=>{
