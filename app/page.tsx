@@ -54,6 +54,13 @@ export default function Home(){
   const currentIds=new Set(currentMatchPlayers.map(x=>x.player_id))
   const currentAssignments=editing?assignments.filter(x=>x.match_id===editing.id):[]
   const coachPlayerIds=new Set(parents.filter(p=>p.is_coach).map(p=>p.player_id))
+  const playerNameClass=(playerId:string)=>{
+    const family=parents.filter(p=>p.player_id===playerId)
+    if(family.some(p=>p.is_coach))return 'coach-name'
+    if(family.some(p=>p.education==='secretariat_24'))return 'edu24-name'
+    if(family.some(p=>p.education==='secretariat'))return 'edu-secretariat-name'
+    return 'edu-none-name'
+  }
   const selectedPlayers=players.filter(p=>currentIds.has(p.id))
   const unselectedPlayers=players.filter(p=>!currentIds.has(p.id))
   const workload=(playerId:string)=>{
@@ -134,7 +141,7 @@ export default function Home(){
           <div className="role-statuses">{roles.map(r=>{
             const found=a.find(x=>x.role===r.key)
             const worker=players.find(p=>p.id===found?.player_id)
-            return <span key={r.key} className={found?`role-pill ${worker&&coachPlayerIds.has(worker.id)?'coach-role':'ok'}`:'role-pill missing'}>{r.short}: {worker?.name||'saknas'}</span>
+            return <span key={r.key} className={found?'role-pill ok':'role-pill missing'}>{r.short}: {worker?<strong className={playerNameClass(worker.id)}>{worker.name}</strong>:'saknas'}</span>
           })}</div>
         </div><span className="chev">›</span>
       </button>
@@ -171,9 +178,9 @@ export default function Home(){
           </button>
           {playersOpen&&<div className="player-picker card">
             <div className="player-picker-label">Valda · {selectedPlayers.length}</div>
-            {selectedPlayers.length?selectedPlayers.map(p=><div className={`player-pick-row selected ${coachPlayerIds.has(p.id)?'coach-player-row':''}`} key={p.id}><span className={coachPlayerIds.has(p.id)?'coach-name':''}>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
+            {selectedPlayers.length?selectedPlayers.map(p=><div className="player-pick-row selected" key={p.id}><span className={playerNameClass(p.id)}>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
             <div className="player-picker-divider"><span>Välj fler</span></div>
-            {unselectedPlayers.map(p=><div className={`player-pick-row ${coachPlayerIds.has(p.id)?'coach-player-row':''}`} key={p.id}><span className={coachPlayerIds.has(p.id)?'coach-name':''}>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
+            {unselectedPlayers.map(p=><div className="player-pick-row" key={p.id}><span className={playerNameClass(p.id)}>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
           </div>}
 
           <div className="section-head"><div><h3>Arbetspass</h3><p>Tryck på ett pass för att välja familj.</p></div></div>
@@ -183,14 +190,14 @@ export default function Home(){
             return <div className="card role-card" key={r.key}>
               <button className="role-main" onClick={()=>setChoosingRole(choosingRole===r.key?null:r.key)}>
                 <span><b>{r.label}</b><small>{r.key==='secretariat'?'Kräver utbildning':'Ingen särskild utbildning krävs'}</small></span>
-                <span className={a?'assigned':'unassigned'}>{p?.name||'Välj'}</span>
+                <span className={a?'assigned':'unassigned'}>{p?<span className={playerNameClass(p.id)}>{p.name}</span>:'Välj'}</span>
               </button>
               {a&&<button className="clear" onClick={()=>clearRole(r.key)}>Ta bort</button>}
               {choosingRole===r.key&&<div className="candidate-list">
                 {players
                   .filter(p=>currentIds.has(p.id)&&qualified(p.id,r.key)&&!currentAssignments.some(a=>a.player_id===p.id&&a.role!==r.key))
                   .sort((a,b)=>Number(coachPlayerIds.has(a.id))-Number(coachPlayerIds.has(b.id))||workload(a.id).ratio-workload(b.id).ratio)
-                  .map(p=>{const st=workload(p.id);const coach=coachPlayerIds.has(p.id);return <button className={coach?'coach-candidate':''} key={p.id} onClick={()=>assign(r.key,p.id)}><span className={coach?'coach-name':''}>{p.name}</span><span>{coach?'Tränare · ej i kvoten':`${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`}</span></button>})}
+                  .map(p=>{const st=workload(p.id);const coach=coachPlayerIds.has(p.id);return <button key={p.id} onClick={()=>assign(r.key,p.id)}><span className={playerNameClass(p.id)}>{p.name}</span><span>{coach?'Tränare · ej i kvoten':`${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`}</span></button>})}
                 {!players.some(p=>currentIds.has(p.id)&&qualified(p.id,r.key))&&<p className="muted">Ingen valbar spelare.</p>}
               </div>}
             </div>
