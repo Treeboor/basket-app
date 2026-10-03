@@ -5,7 +5,7 @@ import Nav from './components/Nav'
 
 type Match={id:string;match_date:string;match_time:string|null;opponent:string|null;location:string}
 type Player={id:string;name:string;active:boolean}
-type Parent={id:string;player_id:string;name:string|null;phone:string|null;education:'none'|'secretariat'|'secretariat_24'}
+type Parent={id:string;player_id:string;name:string|null;phone:string|null;education:'none'|'secretariat'|'secretariat_24';is_coach:boolean}
 type MatchPlayer={match_id:string;player_id:string}
 type Assignment={id:string;match_id:string;player_id:string;role:'secretariat'|'timekeeping'|'filming'|'match_host'}
 const roles=[
@@ -41,7 +41,7 @@ export default function Home(){
     const [m,p,pa,mp,a]=await Promise.all([
       s.from('matches').select('*').gte('match_date',new Date().toISOString().slice(0,10)).order('match_date').order('match_time'),
       s.from('players').select('id,name,active').eq('active',true).order('name'),
-      s.from('parents').select('id,player_id,name,phone,education'),
+      s.from('parents').select('id,player_id,name,phone,education,is_coach'),
       s.from('match_players').select('match_id,player_id'),
       s.from('assignments').select('*'),
     ])
@@ -53,8 +53,14 @@ export default function Home(){
   const currentMatchPlayers=editing?matchPlayers.filter(x=>x.match_id===editing.id):[]
   const currentIds=new Set(currentMatchPlayers.map(x=>x.player_id))
   const currentAssignments=editing?assignments.filter(x=>x.match_id===editing.id):[]
+  const coachPlayerIds=new Set(parents.filter(p=>p.is_coach).map(p=>p.player_id))
   const selectedPlayers=players.filter(p=>currentIds.has(p.id))
   const unselectedPlayers=players.filter(p=>!currentIds.has(p.id))
+  const workload=(playerId:string)=>{
+    const games=matchPlayers.filter(x=>x.player_id===playerId).length
+    const jobs=assignments.filter(x=>x.player_id===playerId).length
+    return {games,jobs,ratio:games?jobs/games:0}
+  }
 
   async function createMatch(e:React.FormEvent){
     e.preventDefault(); setSaving(true)
@@ -128,7 +134,7 @@ export default function Home(){
           <div className="role-statuses">{roles.map(r=>{
             const found=a.find(x=>x.role===r.key)
             const worker=players.find(p=>p.id===found?.player_id)
-            return <span key={r.key} className={found?'role-pill ok':'role-pill missing'}>{r.short}: {worker?.name||'saknas'}</span>
+            return <span key={r.key} className={found?`role-pill ${worker&&coachPlayerIds.has(worker.id)?'coach-role':'ok'}`:'role-pill missing'}>{r.short}: {worker?.name||'saknas'}</span>
           })}</div>
         </div><span className="chev">›</span>
       </button>
@@ -165,9 +171,9 @@ export default function Home(){
           </button>
           {playersOpen&&<div className="player-picker card">
             <div className="player-picker-label">Valda · {selectedPlayers.length}</div>
-            {selectedPlayers.length?selectedPlayers.map(p=><div className="player-pick-row selected" key={p.id}><span>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
+            {selectedPlayers.length?selectedPlayers.map(p=><div className={`player-pick-row selected ${coachPlayerIds.has(p.id)?'coach-player-row':''}`} key={p.id}><span className={coachPlayerIds.has(p.id)?'coach-name':''}>{p.name}</span><button aria-label={`Ta bort ${p.name}`} onClick={()=>togglePlayer(p.id,false)}>−</button></div>):<p className="player-picker-empty">Inga spelare valda.</p>}
             <div className="player-picker-divider"><span>Välj fler</span></div>
-            {unselectedPlayers.map(p=><div className="player-pick-row" key={p.id}><span>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
+            {unselectedPlayers.map(p=><div className={`player-pick-row ${coachPlayerIds.has(p.id)?'coach-player-row':''}`} key={p.id}><span className={coachPlayerIds.has(p.id)?'coach-name':''}>{p.name}</span><button aria-label={`Lägg till ${p.name}`} onClick={()=>togglePlayer(p.id,true)}>＋</button></div>)}
           </div>}
 
           <div className="section-head"><div><h3>Arbetspass</h3><p>Tryck på ett pass för att välja familj.</p></div></div>
@@ -181,7 +187,10 @@ export default function Home(){
               </button>
               {a&&<button className="clear" onClick={()=>clearRole(r.key)}>Ta bort</button>}
               {choosingRole===r.key&&<div className="candidate-list">
-                {players.filter(p=>currentIds.has(p.id)&&qualified(p.id,r.key)&&!currentAssignments.some(a=>a.player_id===p.id&&a.role!==r.key)).map(p=><button key={p.id} onClick={()=>assign(r.key,p.id)}><span>{p.name}</span><span>{parents.some(pa=>pa.player_id===p.id)?'Förälder registrerad':'Saknar förälder'}</span></button>)}
+                {players
+                  .filter(p=>currentIds.has(p.id)&&qualified(p.id,r.key)&&!currentAssignments.some(a=>a.player_id===p.id&&a.role!==r.key))
+                  .sort((a,b)=>Number(coachPlayerIds.has(a.id))-Number(coachPlayerIds.has(b.id))||workload(a.id).ratio-workload(b.id).ratio)
+                  .map(p=>{const st=workload(p.id);const coach=coachPlayerIds.has(p.id);return <button className={coach?'coach-candidate':''} key={p.id} onClick={()=>assign(r.key,p.id)}><span className={coach?'coach-name':''}>{p.name}</span><span>{coach?'Tränare · ej i kvoten':`${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`}</span></button>})}
                 {!players.some(p=>currentIds.has(p.id)&&qualified(p.id,r.key))&&<p className="muted">Ingen valbar spelare.</p>}
               </div>}
             </div>
