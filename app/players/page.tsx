@@ -59,7 +59,7 @@ export default function Players(){
           <label className="stack-label">Spelarens namn<input value={playerName} onChange={e=>setPlayerName(e.target.value)}/></label>
           <button className="secondary full" onClick={savePlayer}>Spara namn</button>
 
-          <div className="section-head"><div><h3>Föräldrar</h3><p>Namn, telefon och utbildning.</p></div></div>
+          <div className="section-head"><div><h3>Föräldrar</h3><p>Namn, telefon, utbildning och roll.</p></div></div>
           <div className="list">{parents.filter(p=>p.player_id===editing.id).map(p=><div className="card parent-card" key={p.id}>
             <label>Namn<input defaultValue={p.name||''} onBlur={e=>updateParent(p,{name:e.target.value||null})}/></label>
             <label>Telefon<input defaultValue={p.phone||''} onBlur={e=>updateParent(p,{phone:e.target.value||null})}/></label>
