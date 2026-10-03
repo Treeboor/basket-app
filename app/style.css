@@ -19,3 +19,8 @@
 .edu-secretariat-name{color:#f2c66d!important;font-weight:800}
 .edu-none-name{color:#ff8f8f!important;font-weight:800}
 .coach-name{color:#8fc7ff!important;font-weight:800}
+
+.copy-match-btn{width:100%;margin-top:10px;border:1px solid #39414b;background:#171a1f;color:#f4f6f8;border-radius:13px;padding:13px 16px;font-weight:800;text-align:center}
+.copy-match-btn:active{transform:scale(.99)}
+.candidate-list button.candidate-disabled{opacity:.6;cursor:not-allowed}
+.candidate-list button.candidate-disabled:active{transform:none}
