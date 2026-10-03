@@ -13,3 +13,9 @@
 .coach-candidate{background:#20242a!important;border:0!important}
 .coach-chip{background:#171a1f!important;border-color:#2b3037!important;color:#8fc7ff!important}
 .coach-role,.coach-assigned{background:#252a31!important;color:#8fc7ff!important}
+
+/* Player qualification colors: name only */
+.edu24-name{color:#7ee59a!important;font-weight:800}
+.edu-secretariat-name{color:#f2c66d!important;font-weight:800}
+.edu-none-name{color:#ff8f8f!important;font-weight:800}
+.coach-name{color:#8fc7ff!important;font-weight:800}
