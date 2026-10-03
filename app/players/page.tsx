@@ -32,6 +32,14 @@ export default function Players(){
   }
   useEffect(()=>{load()},[])
 
+  const playerNameClass=(playerId:string)=>{
+    const family=parents.filter(p=>p.player_id===playerId)
+    if(family.some(p=>p.is_coach))return 'coach-name'
+    if(family.some(p=>p.education==='secretariat_24'))return 'edu24-name'
+    if(family.some(p=>p.education==='secretariat'))return 'edu-secretariat-name'
+    return 'edu-none-name'
+  }
+
   const stats=useMemo(()=>players.map(p=>{
     const games=participations.filter(x=>x.player_id===p.id).length
     const jobs=assignments.filter(x=>x.player_id===p.id).length
@@ -51,11 +59,11 @@ export default function Players(){
 
   return <main><header><div><small>BASKETLAGET</small><h1>Spelare</h1></div></header>
     <form className="inline-form" onSubmit={add}><input placeholder="Spelarens namn" value={name} onChange={e=>setName(e.target.value)}/><button className="primary">Lägg till</button></form>
-    {loading?<p>Laddar…</p>:<div className="list">{stats.map(p=>{const nameClass=p.isCoach?'coach-name':p.educationLevel==='secretariat_24'?'edu24-name':p.educationLevel==='secretariat'?'edu-secretariat-name':'edu-none-name';return <button className="card player-row button-row" key={p.id} onClick={()=>openPlayer(p)}><div><b className={nameClass}>{p.name}</b><p>{p.isCoach?'Tränarfamilj · ej i kvoten':`${p.jobs} av ${p.games} matcher · ${Math.round(p.ratio*100)}%`}</p></div><span className={p.isCoach?'badge coach-badge':p.parentCount?'badge':'badge warn'}>{p.isCoach?'Tränare':p.parentCount?`${p.parentCount} förälder${p.parentCount>1?'ar':''}`:'Saknar förälder'}</span></button>})}</div>}
+    {loading?<p>Laddar…</p>:<div className="list">{stats.map(p=>{return <button className="card player-row button-row" key={p.id} onClick={()=>openPlayer(p)}><div><b className={playerNameClass(p.id)}>{p.name}</b><p>{p.isCoach?'Tränarfamilj · ej i kvoten':`${p.jobs} av ${p.games} matcher · ${Math.round(p.ratio*100)}%`}</p></div><span className={p.isCoach?'badge coach-badge':p.parentCount?'badge':'badge warn'}>{p.isCoach?'Tränare':p.parentCount?`${p.parentCount} förälder${p.parentCount>1?'ar':''}`:'Saknar förälder'}</span></button>})}</div>}
 
     {editing&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}>
       <section className="modal">
-        <div className="modal-head"><div><small>REDIGERA SPELARE</small><h2>{editing.name}</h2></div><button className="icon-btn" onClick={()=>setEditing(null)}>✕</button></div>
+        <div className="modal-head"><div><small>REDIGERA SPELARE</small><h2 className={playerNameClass(editing.id)}>{editing.name}</h2></div><button className="icon-btn" onClick={()=>setEditing(null)}>✕</button></div>
         <div className="modal-body">
           <label className="stack-label">Spelarens namn<input value={playerName} onChange={e=>setPlayerName(e.target.value)}/></label>
           <button className="secondary full" onClick={savePlayer}>Spara namn</button>
