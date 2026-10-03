@@ -9,7 +9,7 @@ export default function Settings(){
   async function logout(){await supabase().auth.signOut(); location.href='/login'}
   return <main><header><div><small>BASKETLAGET</small><h1>Inställningar</h1></div></header>
     <section className="card"><b>Inloggad</b><p>{email||'…'}</p></section>
-    <section className="card"><b>Hemmaplaner</b><p>Kungsbacka och Åseda</p></section>
+    <section className="card"><b>Hemmaplaner</b><p>Kungsbacka och Åsa</p></section>
     <button className="secondary danger" onClick={logout}>Logga ut</button>
     <Nav/></main>
 }
