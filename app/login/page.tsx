@@ -15,7 +15,7 @@ export default function Login(){
       email,
       options:{
         shouldCreateUser:false,
-        emailRedirectTo:`${window.location.origin}/`
+        emailRedirectTo:"https://basket-app-robert-2460s-projects.vercel.app/"
       }
     })
     setSending(false)
