@@ -32,6 +32,7 @@ export default function Home(){
   const [saving,setSaving]=useState(false)
   const [choosingRole,setChoosingRole]=useState<string|null>(null)
   const [playersOpen,setPlayersOpen]=useState(true)
+  const [copied,setCopied]=useState(false)
   const [form,setForm]=useState({match_date:'',match_time:'',opponent:'',location:'Kungsbacka'})
 
   async function load(){
@@ -67,6 +68,35 @@ export default function Home(){
     const games=matchPlayers.filter(x=>x.player_id===playerId).length
     const jobs=assignments.filter(x=>x.player_id===playerId).length
     return {games,jobs,ratio:games?jobs/games:0}
+  }
+
+  function swedishLongDate(date:string){
+    const d=new Date(date+'T12:00:00')
+    const weekdays=['Söndagen','Måndagen','Tisdagen','Onsdagen','Torsdagen','Fredagen','Lördagen']
+    const months=['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december']
+    return `${weekdays[d.getDay()]} den ${d.getDate()} ${months[d.getMonth()]}`
+  }
+
+  async function copyMatchInfo(){
+    if(!editing)return
+    const assignedName=(role:Assignment['role'])=>{
+      const a=currentAssignments.find(x=>x.role===role)
+      const p=players.find(x=>x.id===a?.player_id)
+      return p?.name||'Ej tillsatt'
+    }
+    const text=`Match: ${editing.opponent||'Motståndare ej satt'} - ${swedishLongDate(editing.match_date)}
+
+Sekretariat: ${assignedName('secretariat')}
+Sek tid: ${assignedName('timekeeping')}
+Filmning: ${assignedName('filming')}
+Matchvärd: ${assignedName('match_host')}`
+    try{
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(()=>setCopied(false),1800)
+    }catch{
+      alert(text)
+    }
   }
 
   async function createMatch(e:React.FormEvent){
@@ -171,6 +201,7 @@ export default function Home(){
             <label>Plats<select value={editing.location} onChange={e=>setEditing({...editing,location:e.target.value})}><option>Kungsbacka</option><option>Åsa</option></select></label>
           </div>
           <button className="secondary full" onClick={saveMatch} disabled={saving}>{saving?'Sparar…':'Spara matchinfo'}</button>
+          <button className="copy-match-btn" onClick={copyMatchInfo}>{copied?'✓ Kopierat':'📋 Kopiera matchinfo'}</button>
 
           <button className="section-toggle" onClick={()=>setPlayersOpen(v=>!v)}>
             <span><b>Spelare</b><small>{currentIds.size} valda</small></span>
@@ -195,10 +226,23 @@ export default function Home(){
               {a&&<button className="clear" onClick={()=>clearRole(r.key)}>Ta bort</button>}
               {choosingRole===r.key&&<div className="candidate-list">
                 {players
-                  .filter(p=>currentIds.has(p.id)&&qualified(p.id,r.key)&&!currentAssignments.some(a=>a.player_id===p.id&&a.role!==r.key))
+                  .filter(p=>currentIds.has(p.id))
                   .sort((a,b)=>Number(coachPlayerIds.has(a.id))-Number(coachPlayerIds.has(b.id))||workload(a.id).ratio-workload(b.id).ratio)
-                  .map(p=>{const st=workload(p.id);const coach=coachPlayerIds.has(p.id);return <button key={p.id} onClick={()=>assign(r.key,p.id)}><span className={playerNameClass(p.id)}>{p.name}</span><span>{coach?'Tränare · ej i kvoten':`${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`}</span></button>})}
-                {!players.some(p=>currentIds.has(p.id)&&qualified(p.id,r.key))&&<p className="muted">Ingen valbar spelare.</p>}
+                  .map(p=>{
+                    const st=workload(p.id)
+                    const coach=coachPlayerIds.has(p.id)
+                    const hasPermission=qualified(p.id,r.key)
+                    const otherRole=currentAssignments.some(a=>a.player_id===p.id&&a.role!==r.key)
+                    const disabled=!hasPermission||otherRole
+                    const status=coach
+                      ? 'Tränare · ej i kvoten'
+                      : !hasPermission
+                        ? `Saknar behörighet · ${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+                        : otherRole
+                          ? `Redan tilldelad · ${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+                          : `${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+                    return <button className={disabled?'candidate-disabled':''} disabled={disabled} key={p.id} onClick={()=>assign(r.key,p.id)}><span className={playerNameClass(p.id)}>{p.name}</span><span>{status}</span></button>
+                  })}
               </div>}
             </div>
           })}</div>
