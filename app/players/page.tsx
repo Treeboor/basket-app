@@ -38,7 +38,8 @@ export default function Players(){
     const familyParents=parents.filter(x=>x.player_id===p.id)
     const parentCount=familyParents.length
     const isCoach=familyParents.some(x=>x.is_coach)
-    return {...p,games,jobs,ratio:games?jobs/games:0,parentCount,isCoach}
+    const educationLevel=familyParents.some(x=>x.education==='secretariat_24')?'secretariat_24':familyParents.some(x=>x.education==='secretariat')?'secretariat':'none'
+    return {...p,games,jobs,ratio:games?jobs/games:0,parentCount,isCoach,educationLevel}
   }).sort((a,b)=>Number(a.isCoach)-Number(b.isCoach)||a.ratio-b.ratio||a.name.localeCompare(b.name,'sv')), [players,participations,assignments,parents])
 
   async function add(e:React.FormEvent){e.preventDefault(); if(!name.trim())return; const {error}=await supabase().from('players').insert({name:name.trim()}); if(error){alert(error.message);return}; setName(''); await load()}
@@ -50,7 +51,7 @@ export default function Players(){
 
   return <main><header><div><small>BASKETLAGET</small><h1>Spelare</h1></div></header>
     <form className="inline-form" onSubmit={add}><input placeholder="Spelarens namn" value={name} onChange={e=>setName(e.target.value)}/><button className="primary">Lägg till</button></form>
-    {loading?<p>Laddar…</p>:<div className="list">{stats.map(p=><button className={`card player-row button-row ${p.isCoach?'coach-player-card':''}`} key={p.id} onClick={()=>openPlayer(p)}><div><b className={p.isCoach?'coach-name':''}>{p.name}</b><p>{p.isCoach?'Tränarfamilj · ej i kvoten':`${p.jobs} av ${p.games} matcher · ${Math.round(p.ratio*100)}%`}</p></div><span className={p.isCoach?'badge coach-badge':p.parentCount?'badge':'badge warn'}>{p.isCoach?'Tränare':p.parentCount?`${p.parentCount} förälder${p.parentCount>1?'ar':''}`:'Saknar förälder'}</span></button>)}</div>}
+    {loading?<p>Laddar…</p>:<div className="list">{stats.map(p=>{const nameClass=p.isCoach?'coach-name':p.educationLevel==='secretariat_24'?'edu24-name':p.educationLevel==='secretariat'?'edu-secretariat-name':'edu-none-name';return <button className="card player-row button-row" key={p.id} onClick={()=>openPlayer(p)}><div><b className={nameClass}>{p.name}</b><p>{p.isCoach?'Tränarfamilj · ej i kvoten':`${p.jobs} av ${p.games} matcher · ${Math.round(p.ratio*100)}%`}</p></div><span className={p.isCoach?'badge coach-badge':p.parentCount?'badge':'badge warn'}>{p.isCoach?'Tränare':p.parentCount?`${p.parentCount} förälder${p.parentCount>1?'ar':''}`:'Saknar förälder'}</span></button>})}</div>}
 
     {editing&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}>
       <section className="modal">
