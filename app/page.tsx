@@ -119,7 +119,8 @@ export default function Home(){
         <div className="match-main"><b>{m.opponent?`Mot ${m.opponent}`:'Hemmamatch'}</b><p>{m.match_time?.slice(0,5)||'Tid ej satt'} · {m.location}</p>
           <div className="role-statuses">{roles.map(r=>{
             const found=a.find(x=>x.role===r.key)
-            return <span key={r.key} className={found?'role-pill ok':'role-pill missing'}>{r.short}: {found?'✓':'saknas'}</span>
+            const worker=players.find(p=>p.id===found?.player_id)
+            return <span key={r.key} className={found?'role-pill ok':'role-pill missing'}>{r.short}: {worker?.name||'saknas'}</span>
           })}</div>
         </div><span className="chev">›</span>
       </button>
@@ -132,15 +133,13 @@ export default function Home(){
           <button className="icon-btn" onClick={()=>{setCreating(false);setEditing(null)}}>✕</button>
         </div>
         {creating?<form className="modal-body form-card bare" onSubmit={createMatch}>
-          <label>Datum<input type="date" required value={form.match_date} onChange={e=>setForm({...form,match_date:e.target.value})}/></label>
-          <label>Tid<input type="time" value={form.match_time} onChange={e=>setForm({...form,match_time:e.target.value})}/></label>
+          <label>Datum & tid<input className="date-time-input" type="datetime-local" required value={form.match_date&&form.match_time?`${form.match_date}T${form.match_time.slice(0,5)}`:''} onChange={e=>{const [d,t]=e.target.value.split('T');setForm({...form,match_date:d||'',match_time:t||''})}}/></label>
           <label>Motståndare<input value={form.opponent} onChange={e=>setForm({...form,opponent:e.target.value})}/></label>
           <label>Plats<select value={form.location} onChange={e=>setForm({...form,location:e.target.value})}><option>Kungsbacka</option><option>Åsa</option></select></label>
           <button className="primary" disabled={saving}>{saving?'Sparar…':'Skapa match'}</button>
         </form>:editing&&<div className="modal-body">
           <div className="edit-grid">
-            <label>Datum<input type="date" value={editing.match_date} onChange={e=>setEditing({...editing,match_date:e.target.value})}/></label>
-            <label>Tid<input type="time" value={editing.match_time||''} onChange={e=>setEditing({...editing,match_time:e.target.value})}/></label>
+            <label className="date-time-span">Datum & tid<input className="date-time-input" type="datetime-local" value={editing.match_date?`${editing.match_date}T${editing.match_time?.slice(0,5)||'12:00'}`:''} onChange={e=>{const [d,t]=e.target.value.split('T');setEditing({...editing,match_date:d||editing.match_date,match_time:t||null})}}/></label>
             <label>Motståndare<input value={editing.opponent||''} onChange={e=>setEditing({...editing,opponent:e.target.value})}/></label>
             <label>Plats<select value={editing.location} onChange={e=>setEditing({...editing,location:e.target.value})}><option>Kungsbacka</option><option>Åsa</option></select></label>
           </div>
