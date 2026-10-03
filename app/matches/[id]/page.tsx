@@ -95,9 +95,22 @@ export default function MatchDetail(){
         <button className="role-main" onClick={()=>setChoosing(choosing===role.key?null:role.key)}><span><b>{role.label}</b><small>{role.note}</small></span><span className={a?'assigned':'unassigned'}>{p?<span className={playerNameClass(p.id)}>{p.name}</span>:'Välj'}</span></button>
         {a&&<button className="clear" onClick={()=>clear(role.key)}>Ta bort</button>}
         {choosing===role.key&&<div className="candidate-list">{participating
-          .filter(p=>qualified(p.id,role.key)&&!assignments.some(a=>a.player_id===p.id&&a.role!==role.key))
           .sort((a,b)=>Number(coachPlayerIds.has(a.id))-Number(coachPlayerIds.has(b.id))||(stats.get(a.id)?.ratio||0)-(stats.get(b.id)?.ratio||0))
-          .map(p=>{const st=stats.get(p.id)!;const coach=coachPlayerIds.has(p.id);return <button key={p.id} onClick={()=>assign(role.key,p.id)}><span className={playerNameClass(p.id)}>{p.name}</span><span>{coach?'Tränare · ej i kvoten':`${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`}</span></button>})}{!participating.some(p=>qualified(p.id,role.key))&&<p className="muted">Ingen valbar spelare för den här rollen.</p>}</div>}
+          .map(p=>{
+            const st=stats.get(p.id)!
+            const coach=coachPlayerIds.has(p.id)
+            const hasPermission=qualified(p.id,role.key)
+            const otherRole=assignments.some(a=>a.player_id===p.id&&a.role!==role.key)
+            const disabled=!hasPermission||otherRole
+            const status=coach
+              ? 'Tränare · ej i kvoten'
+              : !hasPermission
+                ? `Saknar behörighet · ${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+                : otherRole
+                  ? `Redan tilldelad · ${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+                  : `${st.jobs} av ${st.games} · ${Math.round(st.ratio*100)}%`
+            return <button className={disabled?'candidate-disabled':''} disabled={disabled} key={p.id} onClick={()=>assign(role.key,p.id)}><span className={playerNameClass(p.id)}>{p.name}</span><span>{status}</span></button>
+          })}</div>}
       </section>
     })}</div>
     <Nav/>
